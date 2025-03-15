@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F-1 Visa Application Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #f7f6f3;
+            color: #37352f;
+            margin: 0;
+            padding: 0;
+        }
+        .notion-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .page-title {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+        .database-table {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #f7f6f3;
+            font-weight: 500;
+            text-align: left;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+        }
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+        }
+        tr:hover {
+            background-color: #f9f9f8;
+        }
+        .status-select {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .not-started {
+            background-color: #ebebea;
+        }
+        .in-progress {
+            background-color: #f1dbff;
+            color: #8040bf;
+        }
+        .completed {
+            background-color: #ddedea;
+            color: #0b7261;
+        }
+        .checkbox {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 1px solid rgba(55, 53, 47, 0.3);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer;
+        }
+        .checkbox.checked {
+            background-color: #2383e2;
+            border-color: #2383e2;
+        }
+        .checkbox.checked::after {
+            content: "✓";
+            color: white;
+            position: absolute;
+            top: -3px;
+            left: 2px;
+            font-size: 14px;
+        }
+        .view-options {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .view-button {
+            padding: 6px 12px;
+            border-radius: 3px;
+            background-color: white;
+            font-size: 14px;
+            border: 1px solid rgba(55, 53, 47, 0.16);
+            cursor: pointer;
+        }
+        .view-button.active {
+            background-color: rgba(35, 131, 226, 0.14);
+            color: #2383e2;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #ebebea;
+            border-radius: 4px;
+            margin-bottom: 40px;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #2383e2;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 14px;
+            color: rgba(55, 53, 47, 0.65);
+            margin-bottom: 10px;
+        }
+        .formula-column {
+            font-size: 14px;
+        }
+        .formula-done {
+            color: #0b7261;
+        }
+        .formula-pending {
+            color: #937828;
+        }
+        .sub-task td:first-child {
+            padding-left: 30px;
+            font-size: 14px;
+        }
+        .add-task-button {
+            background-color: rgba(35, 131, 226, 0.14);
+            color: #2383e2;
+            padding: 8px 16px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .add-task-button:hover {
+            background-color: rgba(35, 131, 226, 0.2);
+        }
+        .add-task-form {
+            background-color: white;
+            border-radius: 5px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            display: none;
+        }
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .form-group {
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: rgba(55, 53, 47, 0.65);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(55, 53, 47, 0.16);
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .form-actions button {
+            padding: 6px 12px;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .cancel-button {
+            background-color: transparent;
+            border: 1px solid rgba(55, 53, 47, 0.16);
+        }
+        .submit-button {
+            background-color: #2383e2;
+            color: white;
+            border: none;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-label {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="notion-container">
+        <div class="page-title">F-1 Visa Application Tracker</div>
+        
+        <div class="progress-text">Progress: <span id="progress-percentage">0%</span> (<span id="completed-steps">0</span>/<span id="total-steps">9</span>)</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        
+        <div class="view-options">
+            <div class="view-button active">All</div>
+            <div class="view-button">Not Started</div>
+            <div class="view-button">In Progress</div>
+            <div class="view-button">Completed</div>
+        </div>
+        
+        <button class="add-task-button" id="add-task-button">
+            <span>+</span> Add new task
+        </button>
+        
+        <div class="add-task-form" id="add-task-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="task-name">Task Name</label>
+                    <input type="text" id="task-name" placeholder="Enter task name">
+                </div>
+                <div class="form-group">
+                    <label for="task-status">Status</label>
+                    <select id="task-status">
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="task-deadline">Deadline</label>
+                    <input type="text" id="task-deadline" placeholder="Enter deadline (e.g., May 2025)">
+                </div>
+                <div class="form-group">
+                    <label for="task-notes">Notes</label>
+                    <textarea id="task-notes" placeholder="Add any additional notes"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="is-subtask">
+                        <span class="checkbox-label">Add as sub-task</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="cancel-button" id="cancel-task-button">Cancel</button>
+                <button class="submit-button" id="submit-task-button">Add Task</button>
+            </div>
+        </div>
+        
+        <div class="database-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Step Name</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                        <th>Notes</th>
+                        <th>Completed</th>
+                        <th>Status Formula</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="main-task">
+                        <td>Get Form I-20</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>May 2025</td>
+                        <td>Submit financial docs</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr class="sub-task">
+                        <td>- Financial Guarantee</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>May 2025</td>
+                        <td>From sponsor or bank</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr class="sub-task">
+                        <td>- Financial Documents</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>May 2025</td>
+                        <td>Bank statements, etc.</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr class="sub-task">
+                        <td>- Passport</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>May 2025</td>
+                        <td>Valid for 6+ months after program</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Pay SEVIS Fee</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>June 2025</td>
+                        <td>FMJfee.com</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Complete DS-160</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>June 2025</td>
+                        <td>CEAC website</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Schedule Visa Interview</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>July 2025</td>
+                        <td>Check wait times early</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Attend Visa Interview</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>August 2025</td>
+                        <td>Bring all documents</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Receive F-1 Visa</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>August 2025</td>
+                        <td>Check for errors</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                    <tr>
+                        <td>Travel to ASU</td>
+                        <td><span class="status-select not-started">Not Started</span></td>
+                        <td>September 2025</td>
+                        <td>Arrive 30 days before</td>
+                        <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                        <td class="formula-column formula-pending">⏳ Pending</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Data persistence
+        const STORAGE_KEY = 'f1_visa_tracker_data';
+        let memoryStorage = {}; // Fallback storage if localStorage is unavailable
+        
+        // Check if localStorage is available
+        function isLocalStorageAvailable() {
+            try {
+                const test = 'test';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                console.warn('localStorage is not available, using memory storage instead');
+                return false;
+            }
+        }
+        
+        // Get data from storage
+        function getFromStorage(key) {
+            if (isLocalStorageAvailable()) {
+                return localStorage.getItem(key);
+            } else {
+                return memoryStorage[key];
+            }
+        }
+        
+        // Save data to storage
+        function saveToStorage(key, value) {
+            if (isLocalStorageAvailable()) {
+                localStorage.setItem(key, value);
+            } else {
+                memoryStorage[key] = value;
+            }
+        }
+        
+        // Initialize data
+        function initializeData() {
+            const savedData = getFromStorage(STORAGE_KEY);
+            if (savedData) {
+                // Load saved data
+                const data = JSON.parse(savedData);
+                loadSavedData(data);
+            } else {
+                // Create initial data structure from existing table
+                saveCurrentData();
+            }
+            updateProgress();
+        }
+        
+        // Save current data
+        function saveCurrentData() {
+            const rows = document.querySelectorAll('tbody tr');
+            const data = [];
+            
+            rows.forEach(row => {
+                const isSubtask = row.classList.contains('sub-task');
+                const isChecked = row.querySelector('.checkbox').classList.contains('checked');
+                const statusElement = row.querySelector('.status-select');
+                
+                data.push({
+                    id: generateId(),
+                    taskName: row.cells[0].textContent.trim(),
+                    status: statusElement.textContent,
+                    deadline: row.cells[2].textContent.trim(),
+                    notes: row.cells[3].textContent.trim(),
+                    completed: isChecked,
+                    isSubtask: isSubtask
+                });
+            });
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+        
+        // Load saved data into the table
+        function loadSavedData(data) {
+            const tableBody = document.querySelector('tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                if (item.isSubtask) {
+                    row.classList.add('sub-task');
+                } else {
+                    row.classList.add('main-task');
+                }
+                
+                const statusClass = item.status === 'Completed' ? 'completed' : 
+                                   item.status === 'In Progress' ? 'in-progress' : 'not-started';
+                
+                const formulaClass = item.completed ? 'formula-done' : 'formula-pending';
+                const formulaText = item.completed ? '✅ Done' : '⏳ Pending';
+                
+                row.innerHTML = `
+                    <td>${item.taskName}</td>
+                    <td><span class="status-select ${statusClass}">${item.status}</span></td>
+                    <td>${item.deadline}</td>
+                    <td>${item.notes}</td>
+                    <td><div class="checkbox ${item.completed ? 'checked' : ''}" onclick="toggleCheckbox(this)"></div></td>
+                    <td class="formula-column ${formulaClass}">${formulaText}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Generate a unique ID
+        function generateId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Toggle checkbox state
+        function toggleCheckbox(element) {
+            element.classList.toggle('checked');
+            updateStatus(element);
+            updateProgress();
+            updateFormula(element);
+            saveCurrentData(); // Save after change
+        }
+        
+        // Update status based on checkbox
+        function updateStatus(checkboxElement) {
+            const row = checkboxElement.closest('tr');
+            const statusCell = row.cells[1].querySelector('.status-select');
+            
+            if (checkboxElement.classList.contains('checked')) {
+                statusCell.textContent = 'Completed';
+                statusCell.className = 'status-select completed';
+            } else {
+                statusCell.textContent = 'Not Started';
+                statusCell.className = 'status-select not-started';
+            }
+        }
+        
+        // Update formula display
+        function updateFormula(checkboxElement) {
+            const row = checkboxElement.closest('tr');
+            const formulaCell = row.cells[5];
+            
+            if (checkboxElement.classList.contains('checked')) {
+                formulaCell.textContent = '✅ Done';
+                formulaCell.className = 'formula-column formula-done';
+            } else {
+                formulaCell.textContent = '⏳ Pending';
+                formulaCell.className = 'formula-column formula-pending';
+            }
+        }
+        
+        // Update progress bar and text
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('.checkbox');
+            const totalSteps = checkboxes.length;
+            let completedSteps = 0;
+            
+            checkboxes.forEach(checkbox => {
+                if (checkbox.classList.contains('checked')) {
+                    completedSteps++;
+                }
+            });
+            
+            const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
+            document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+            document.getElementById('progress-percentage').textContent = `${progressPercentage}%`;
+            document.getElementById('completed-steps').textContent = completedSteps;
+            document.getElementById('total-steps').textContent = totalSteps;
+        }
+        
+        // Add new task
+        function addNewTask() {
+            const taskName = document.getElementById('task-name').value;
+            const taskStatus = document.getElementById('task-status').value;
+            const taskDeadline = document.getElementById('task-deadline').value;
+            const taskNotes = document.getElementById('task-notes').value;
+            const isSubtask = document.getElementById('is-subtask').checked;
+            
+            if (!taskName) {
+                alert('Please enter a task name');
+                return;
+            }
+            
+            const tableBody = document.querySelector('tbody');
+            const row = document.createElement('tr');
+            row.classList.add(isSubtask ? 'sub-task' : 'main-task');
+            
+            const statusClass = taskStatus === 'Completed' ? 'completed' : 
+                               taskStatus === 'In Progress' ? 'in-progress' : 'not-started';
+            
+            row.innerHTML = `
+                <td>${isSubtask ? '- ' : ''}${taskName}</td>
+                <td><span class="status-select ${statusClass}">${taskStatus}</span></td>
+                <td>${taskDeadline}</td>
+                <td>${taskNotes}</td>
+                <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
+                <td class="formula-column formula-pending">⏳ Pending</td>
+            `;
+            
+            tableBody.appendChild(row);
+            
+            // Clear form and hide it
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-deadline').value = '';
+            document.getElementById('task-notes').value = '';
+            document.getElementById('is-subtask').checked = false;
+            document.getElementById('add-task-form').style.display = 'none';
+            
+            // Save changes
+            saveCurrentData();
+            updateProgress();
+        }
+        
+        // Save current data
+        function saveCurrentData() {
+            try {
+                const rows = document.querySelectorAll('tbody tr');
+                const data = [];
+                
+                rows.forEach(row => {
+                    const isSubtask = row.classList.contains('sub-task');
+                    const checkboxElement = row.querySelector('.checkbox');
+                    const isChecked = checkboxElement && checkboxElement.classList.contains('checked');
+                    const statusElement = row.querySelector('.status-select');
+                    
+                    data.push({
+                        id: generateId(),
+                        taskName: row.cells[0].textContent.trim(),
+                        status: statusElement ? statusElement.textContent : 'Not Started',
+                        deadline: row.cells[2].textContent.trim(),
+                        notes: row.cells[3].textContent.trim(),
+                        completed: isChecked,
+                        isSubtask: isSubtask
+                    });
+                });
+                
+                saveToStorage(STORAGE_KEY, JSON.stringify(data));
+            } catch (error) {
+                console.error('Error saving data:', error);
+                // Show an alert or notification about the error
+                alert('Unable to save data automatically. You may need to manually export your data before closing this page.');
+            }
+        }
+        
+        // Filter view based on selection
+        function filterView(index) {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const statusText = row.cells[1].querySelector('.status-select').textContent;
+                
+                if (index === 0) { // All
+                    row.style.display = '';
+                } else if (index === 1 && statusText === 'Not Started') { // Not Started
+                    row.style.display = '';
+                } else if (index === 2 && statusText === 'In Progress') { // In Progress
+                    row.style.display = '';
+                } else if (index === 3 && statusText === 'Completed') { // Completed
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Export data as JSON file
+        function exportData() {
+            let data;
+            try {
+                data = getFromStorage(STORAGE_KEY);
+                if (!data) {
+                    // If no saved data, export current table data
+                    const rows = document.querySelectorAll('tbody tr');
+                    const currentData = [];
+                    
+                    rows.forEach(row => {
+                        const isSubtask = row.classList.contains('sub-task');
+                        const checkboxElement = row.querySelector('.checkbox');
+                        const isChecked = checkboxElement && checkboxElement.classList.contains('checked');
+                        const statusElement = row.querySelector('.status-select');
+                        
+                        currentData.push({
+                            id: generateId(),
+                            taskName: row.cells[0].textContent.trim(),
+                            status: statusElement ? statusElement.textContent : 'Not Started',
+                            deadline: row.cells[2].textContent.trim(),
+                            notes: row.cells[3].textContent.trim(),
+                            completed: isChecked,
+                            isSubtask: isSubtask
+                        });
+                    });
+                    
+                    data = JSON.stringify(currentData);
+                }
+            } catch (error) {
+                console.error('Error getting data for export:', error);
+                alert('An error occurred while preparing data for export.');
+                return;
+            }
+            
+            try {
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'f1_visa_tracker_backup_' + new Date().toISOString().split('T')[0] + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                
+                // Fallback method: copy to clipboard
+                const textarea = document.createElement('textarea');
+                textarea.value = data;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                alert('Direct download failed. Data has been copied to your clipboard. Please paste and save it in a text file with .json extension.');
+            }
+        }
+        
+        // Import data from JSON file
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    loadSavedData(data);
+                    updateProgress();
+                    alert('Data imported successfully!');
+                } catch (error) {
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Initialize event listeners
+        function initEventListeners() {
+            // View filter buttons
+            const viewButtons = document.querySelectorAll('.view-button');
+            viewButtons.forEach((button, index) => {
+                button.addEventListener('click', () => {
+                    viewButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    filterView(index);
+                });
+            });
+            
+            // Add task form
+            document.getElementById('add-task-button').addEventListener('click', () => {
+                document.getElementById('add-task-form').style.display = 'block';
+            });
+            
+            document.getElementById('cancel-task-button').addEventListener('click', () => {
+                document.getElementById('add-task-form').style.display = 'none';
+            });
+            
+            document.getElementById('submit-task-button').addEventListener('click', addNewTask);
+            
+            // Add export/import and data persistence info
+            document.querySelector('.notion-container').insertAdjacentHTML('beforeend', `
+                <div style="margin-top: 40px; text-align: right;">
+                    <button onclick="exportData()" class="cancel-button">Export Data</button>
+                    <input type="file" id="import-file" style="display: none;" accept=".json" />
+                    <button onclick="document.getElementById('import-file').click()" class="cancel-button">Import Data</button>
+                </div>
+                <div style="margin-top: 20px; padding: 16px; background-color: #f7f7f7; border-radius: 5px; font-size: 14px; color: #666;">
+                    <strong>Data Persistence Note:</strong> Your changes are being saved ${isLocalStorageAvailable() ? 'to your browser\'s local storage' : 'in memory'}. 
+                    ${!isLocalStorageAvailable() ? '<strong>Important:</strong> Your data will be lost when you close this page. Please use the Export button to save your progress before closing.' : ''}
+                    <br><br>
+                    <strong>Tip:</strong> To ensure you never lose your progress, regularly export your data using the "Export Data" button above.
+                </div>
+            `);
+            
+            document.getElementById('import-file').addEventListener('change', importData);
+        }
+        
+        // Initialize app on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initEventListeners();
+            initializeData();
+        });
+    </script>
+</body>
+</html>
