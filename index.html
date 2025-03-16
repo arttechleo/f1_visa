@@ -1,128 +1,4 @@
-// Make a cell content editable
-        function makeEditable(cell, field) {
-            // Don't make checkbox cells editable
-            if (cell.querySelector('.checkbox')) return;
-            
-            // Skip status cells (they have dropdown instead)
-            if (cell.querySelector('.status-select')) return;
-            
-            // Create an editable div if it doesn't exist
-            if (!cell.querySelector('.editable-content')) {
-                const originalContent = cell.innerHTML;
-                cell.innerHTML = `<div class="editable-content" contenteditable="false">${originalContent}</div>`;
-                
-                // Add edit icon for notes cells
-                if (field === 'notes') {
-                    const editIcon = document.createElement('span');
-                    editIcon.className = 'edit-icon';
-                    editIcon.innerHTML = '✎';
-                    editIcon.title = 'Edit notes';
-                    cell.appendChild(editIcon);
-                    
-                    // Make the cell look like a notes cell
-                    cell.classList.add('notes-cell');
-                    
-                    // When edit icon is clicked
-                    editIcon.addEventListener('click', function() {
-                        const content = cell.querySelector('.editable-content');
-                        content.contentEditable = true;
-                        content.classList.add('cell-edit-mode');
-                        content.focus();
-                        
-                        // Place cursor at the end
-                        const range = document.createRange();
-                        range.selectNodeContents(content);
-                        range.collapse(false);
-                        const selection = window.getSelection();
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    });
-                }
-            }
-            
-            // Add event listeners
-            const content = cell.querySelector('.editable-content');
-            
-            // Save on blur
-            content.addEventListener('blur', function() {
-                content.contentEditable = false;
-                content.classList.remove('cell-edit-mode');
-                saveCurrentData();
-            });
-            
-            // Save on Enter key
-            content.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    content.blur();
-                }
-            });
-        }
-        
-        // Make status selectable
-        function makeStatusSelectable(cell) {
-            const statusElement = cell.querySelector('.status-select');
-            if (!statusElement) return;
-            
-            // Make status cell clickable
-            cell.style.cursor = 'pointer';
-            
-            cell.addEventListener('click', function() {
-                const currentStatus = statusElement.textContent;
-                const statuses = ['Not Started', 'In Progress', 'On Hold', 'Completed'];
-                
-                // Create dropdown for status selection
-                const dropdown = document.createElement('select');
-                statuses.forEach(status => {
-                    const option = document.createElement('option');
-                    option.value = status;
-                    option.text = status;
-                    option.selected = status === currentStatus;
-                    dropdown.appendChild(option);
-                });
-                
-                // Replace status with dropdown temporarily
-                cell.innerHTML = '';
-                cell.appendChild(dropdown);
-                dropdown.focus();
-                
-                // When selection changes
-                dropdown.addEventListener('change', function() {
-                    updateStatusCell(cell, dropdown.value);
-                    saveCurrentData();
-                });
-                
-                // When dropdown loses focus
-                dropdown.addEventListener('blur', function() {
-                    updateStatusCell(cell, dropdown.value);
-                    saveCurrentData();
-                });
-            });
-        }
-        
-        // Update the status cell with a new status
-        function updateStatusCell(cell, newStatus) {
-            const statusClass = newStatus === 'Completed' ? 'completed' : 
-                              newStatus === 'In Progress' ? 'in-progress' : 
-                              newStatus === 'On Hold' ? 'on-hold' : 'not-started';
-            
-            cell.innerHTML = `<span class="status-select ${statusClass}">${newStatus}</span>`;
-        }
-        
-        // Initialize cells for editing and status selection
-        function initializeEditableCells() {
-            const rows = document.querySelectorAll('tbody tr');
-            
-            rows.forEach(row => {
-                // Make notes cell editable (index 3 is the notes column)
-                const notesCell = row.cells[3];
-                makeEditable(notesCell, 'notes');
-                
-                // Make status cell selectable (index 1 is the status column)
-                const statusCell = row.cells[1];
-                makeStatusSelectable(statusCell);
-            });
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -262,10 +138,6 @@
             padding-left: 30px;
             font-size: 14px;
         }
-        .on-hold {
-            background-color: #ffedd5;
-            color: #9a3412;
-        }
         .add-task-button {
             background-color: rgba(35, 131, 226, 0.14);
             color: #2383e2;
@@ -281,31 +153,6 @@
         }
         .add-task-button:hover {
             background-color: rgba(35, 131, 226, 0.2);
-        }
-        .edit-icon {
-            opacity: 0.5;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 5px;
-        }
-        .edit-icon:hover {
-            opacity: 1;
-        }
-        .notes-cell {
-            position: relative;
-        }
-        .editable-content {
-            min-height: 1em;
-            outline: none;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        .editable-content:focus, .editable-content:hover {
-            background-color: rgba(35, 131, 226, 0.1);
-        }
-        .cell-edit-mode {
-            background-color: rgba(35, 131, 226, 0.1);
-            border: 1px solid rgba(35, 131, 226, 0.5);
         }
         .add-task-form {
             background-color: white;
@@ -383,7 +230,6 @@
             <div class="view-button active">All</div>
             <div class="view-button">Not Started</div>
             <div class="view-button">In Progress</div>
-            <div class="view-button">On Hold</div>
             <div class="view-button">Completed</div>
         </div>
         
@@ -402,7 +248,6 @@
                     <select id="task-status">
                         <option value="Not Started">Not Started</option>
                         <option value="In Progress">In Progress</option>
-                        <option value="On Hold">On Hold</option>
                         <option value="Completed">Completed</option>
                     </select>
                 </div>
@@ -626,7 +471,7 @@
                     <td>${item.taskName}</td>
                     <td><span class="status-select ${statusClass}">${item.status}</span></td>
                     <td>${item.deadline}</td>
-                    <td class="notes-cell"><div class="editable-content" contenteditable="false">${item.notes}</div><span class="edit-icon" title="Edit notes">✎</span></td>
+                    <td>${item.notes}</td>
                     <td><div class="checkbox ${item.completed ? 'checked' : ''}" onclick="toggleCheckbox(this)"></div></td>
                     <td class="formula-column ${formulaClass}">${formulaText}</td>
                 `;
@@ -713,15 +558,14 @@
             const row = document.createElement('tr');
             row.classList.add(isSubtask ? 'sub-task' : 'main-task');
             
-                            const statusClass = taskStatus === 'Completed' ? 'completed' : 
-                               taskStatus === 'In Progress' ? 'in-progress' :
-                               taskStatus === 'On Hold' ? 'on-hold' : 'not-started';
+            const statusClass = taskStatus === 'Completed' ? 'completed' : 
+                               taskStatus === 'In Progress' ? 'in-progress' : 'not-started';
             
             row.innerHTML = `
                 <td>${isSubtask ? '- ' : ''}${taskName}</td>
                 <td><span class="status-select ${statusClass}">${taskStatus}</span></td>
                 <td>${taskDeadline}</td>
-                <td class="notes-cell"><div class="editable-content" contenteditable="false">${taskNotes}</div><span class="edit-icon" title="Edit notes">✎</span></td>
+                <td>${taskNotes}</td>
                 <td><div class="checkbox" onclick="toggleCheckbox(this)"></div></td>
                 <td class="formula-column formula-pending">⏳ Pending</td>
             `;
@@ -751,14 +595,13 @@
                     const checkboxElement = row.querySelector('.checkbox');
                     const isChecked = checkboxElement && checkboxElement.classList.contains('checked');
                     const statusElement = row.querySelector('.status-select');
-                    const notesElement = row.cells[3].querySelector('.editable-content');
                     
                     data.push({
                         id: generateId(),
                         taskName: row.cells[0].textContent.trim(),
                         status: statusElement ? statusElement.textContent : 'Not Started',
                         deadline: row.cells[2].textContent.trim(),
-                        notes: notesElement ? notesElement.textContent.trim() : row.cells[3].textContent.trim(),
+                        notes: row.cells[3].textContent.trim(),
                         completed: isChecked,
                         isSubtask: isSubtask
                     });
@@ -784,9 +627,7 @@
                     row.style.display = '';
                 } else if (index === 2 && statusText === 'In Progress') { // In Progress
                     row.style.display = '';
-                } else if (index === 3 && statusText === 'On Hold') { // On Hold
-                    row.style.display = '';
-                } else if (index === 4 && statusText === 'Completed') { // Completed
+                } else if (index === 3 && statusText === 'Completed') { // Completed
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -919,7 +760,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             initEventListeners();
             initializeData();
-            initializeEditableCells();
         });
     </script>
 </body>
